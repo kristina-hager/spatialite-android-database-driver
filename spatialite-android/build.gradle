@@ -18,6 +18,19 @@ android {
     }
 }
 
+task androidJar(type: Jar, dependsOn: ['assemble']) {
+    group 'Build'
+    description 'spatialite-android JNI jarFile'
+    from zipTree('build/intermediates/bundles/release/classes.jar')
+    from(file('src/main/java/jniLibs')) {
+        into 'lib'
+    }
+}
+
+//artifacts {
+//    archives androidJar
+//}
+
 dependencies {
     compile 'com.android.support:appcompat-v7:21.+'
     compile fileTree(dir: 'libs', include: ['*.jar'])
