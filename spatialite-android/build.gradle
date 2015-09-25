@@ -1,4 +1,16 @@
 apply plugin: 'com.android.library'
+apply plugin: 'maven'
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'maven-publish'
+
+//promoting jar
+def localReleaseDest = "/Users/kristina/AndroidStudioProjects/AndroidModulesExample/repos"
+// ext is a gradle closure allowing the declaration of global properties
+ext {
+    PUBLISH_GROUP_ID = 'com.example'
+    PUBLISH_ARTIFACT_ID = 'spatialite-android'
+    PUBLISH_VERSION = '1.0.0'
+}
 
 android {
     compileSdkVersion 21
@@ -25,7 +37,16 @@ task androidJar(type: Jar, dependsOn: ['assemble']) {
     from(file('src/main/java/jniLibs')) {
         into 'lib'
     }
+    //give jar a jar-like name with version number
+    baseName = PUBLISH_ARTIFACT_ID + '-' + PUBLISH_VERSION
 }
+
+//inclusion of these lines causes a circular dependency
+//* What went wrong:
+//Circular dependency between the following tasks:
+//:spatialite-android:androidJar
+//\--- :spatialite-android:assemble
+//     \--- :spatialite-android:androidJar (*)
 
 //artifacts {
 //    archives androidJar
@@ -35,3 +56,79 @@ dependencies {
     compile 'com.android.support:appcompat-v7:21.+'
     compile fileTree(dir: 'libs', include: ['*.jar'])
 }
+
+//building my own local upload to mimic uploadArchive
+task copyAndroidJar(type: Copy, dependsOn:androidJar) {
+    from('build/libs/')
+    into(localReleaseDest)
+    include(androidJar.baseName + '.jar')
+}
+
+//javadocs and sources jar code from:
+//http://blog.blundell-apps.com/locally-release-an-android-library-for-jcenter-or-maven-central-inclusion/
+//task androidJavadocs(type: Javadoc) {
+//    source = android.sourceSets.main.java.srcDirs
+//    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+//}
+//
+//task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
+//    classifier = 'javadoc'
+//    from androidJavadocs.destinationDir
+//}
+
+task androidSourcesJar(type: Jar) {
+    classifier = 'sources'
+    from android.sourceSets.main.java.srcDirs
+}
+
+artifacts {
+    archives androidSourcesJar
+//    archives androidJavadocsJar
+}
+
+//adding maven information
+publishing {
+    publications {
+        //name 'MyPublication' corresponds to 'publications' setting in bintray section
+        MyPublication(MavenPublication) {
+            //test it hard-coded for now
+            artifact 'build/libs/spatialite-android-1.0.0.jar'
+//            artifact "${project.buildDir}/libs/${project.name}-release.aar"
+            groupId 'com.example'
+            artifactId 'spatialite-android'
+            version '1.0.0'
+
+            //add sources and javadoc jars to upload
+            artifact(androidSourcesJar)
+//            artifact(androidJavadocsJar)
+        }
+    }
+}
+
+def siteUrl = 'https://github.com/kristina-hager/spatialite-android-database-driver.git'
+def gitUrl = 'https://github.com/kristina-hager/spatialite-android-database-driver.git'
+
+//right now, below requires you to call:
+//gradle androidJar first
+//need to fix that here.
+bintray {
+    user =  System.getenv('BINTRAY_USER')
+    key = System.getenv('BINTRAY_KEY')
+
+    publications = ['MyPublication']
+    pkg {
+        repo = 'kh-examples'
+        name = PUBLISH_ARTIFACT_ID
+        desc = 'spatialite-android JNI jarFile publishing example'
+        websiteUrl = siteUrl
+        vcsUrl = gitUrl
+        licenses = ['LGPL-3.0']
+        labels = ['jar', 'android', 'example']
+        publicDownloadNumbers = true
+        version {
+            name = PUBLISH_VERSION
+        }
+    }
+}
+
+bintrayUpload.dependsOn androidJar
