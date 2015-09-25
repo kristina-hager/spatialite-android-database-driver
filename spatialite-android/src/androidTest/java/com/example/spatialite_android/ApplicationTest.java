@@ -1,4 +1,4 @@
-package com.example.spatialite_android_driver;
+package com.example.spatialite_android;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

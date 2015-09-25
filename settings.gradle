@@ -1,1 +1,1 @@
-include ':spatialite-android-driver'
+include ':spatialite-android'
