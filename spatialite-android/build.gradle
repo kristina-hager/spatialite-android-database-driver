@@ -3,7 +3,6 @@ apply plugin: 'maven'
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'maven-publish'
 
-//def localReleaseDest = "/Users/kristina/localAndroidRepos"
 def siteUrl = 'https://github.com/kristina-hager/spatialite-android-database-driver.git'
 def gitUrl = 'https://github.com/kristina-hager/spatialite-android-database-driver.git'
 def buildLibs = 'build/libs/'
@@ -50,15 +49,6 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
 }
 
-//building my own local upload to mimic uploadArchive
-//task copyAndroidJar(type: Copy, dependsOn:androidJar) {
-//    from(buildLibs)
-//    into(localReleaseDest)
-//    include(androidJar.baseName + '.jar')
-//}
-
-//javadocs and sources jar code from:
-//http://blog.blundell-apps.com/locally-release-an-android-library-for-jcenter-or-maven-central-inclusion/
 task androidSourcesJar(type: Jar) {
     classifier = 'sources'
     from android.sourceSets.main.java.srcDirs
@@ -73,7 +63,6 @@ publishing {
     publications {
         //name 'MyPublication' corresponds to 'publications' setting in bintray section
         MyPublication(MavenPublication) {
-//            artifact 'build/libs/spatialite-android-1.0.1.jar'
             artifact buildLibs + androidJar.baseName + '.jar'
             groupId PUBLISH_GROUP_ID
             artifactId PUBLISH_ARTIFACT_ID
