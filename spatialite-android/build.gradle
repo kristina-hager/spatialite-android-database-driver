@@ -3,13 +3,16 @@ apply plugin: 'maven'
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'maven-publish'
 
-//promoting jar
-def localReleaseDest = "/Users/kristina/AndroidStudioProjects/AndroidModulesExample/repos"
+//def localReleaseDest = "/Users/kristina/localAndroidRepos"
+def siteUrl = 'https://github.com/kristina-hager/spatialite-android-database-driver.git'
+def gitUrl = 'https://github.com/kristina-hager/spatialite-android-database-driver.git'
+def buildLibs = 'build/libs/'
+
 // ext is a gradle closure allowing the declaration of global properties
 ext {
     PUBLISH_GROUP_ID = 'com.example'
     PUBLISH_ARTIFACT_ID = 'spatialite-android'
-    PUBLISH_VERSION = '1.0.0'
+    PUBLISH_VERSION = '1.0.2'
 }
 
 android {
@@ -30,6 +33,7 @@ android {
     }
 }
 
+//source: https://realm.io/news/writing-android-libraries/
 task androidJar(type: Jar, dependsOn: ['assemble']) {
     group 'Build'
     description 'spatialite-android JNI jarFile'
@@ -41,41 +45,20 @@ task androidJar(type: Jar, dependsOn: ['assemble']) {
     baseName = PUBLISH_ARTIFACT_ID + '-' + PUBLISH_VERSION
 }
 
-//inclusion of these lines causes a circular dependency
-//* What went wrong:
-//Circular dependency between the following tasks:
-//:spatialite-android:androidJar
-//\--- :spatialite-android:assemble
-//     \--- :spatialite-android:androidJar (*)
-
-//artifacts {
-//    archives androidJar
-//}
-
 dependencies {
     compile 'com.android.support:appcompat-v7:21.+'
     compile fileTree(dir: 'libs', include: ['*.jar'])
 }
 
 //building my own local upload to mimic uploadArchive
-task copyAndroidJar(type: Copy, dependsOn:androidJar) {
-    from('build/libs/')
-    into(localReleaseDest)
-    include(androidJar.baseName + '.jar')
-}
+//task copyAndroidJar(type: Copy, dependsOn:androidJar) {
+//    from(buildLibs)
+//    into(localReleaseDest)
+//    include(androidJar.baseName + '.jar')
+//}
 
 //javadocs and sources jar code from:
 //http://blog.blundell-apps.com/locally-release-an-android-library-for-jcenter-or-maven-central-inclusion/
-//task androidJavadocs(type: Javadoc) {
-//    source = android.sourceSets.main.java.srcDirs
-//    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-//}
-//
-//task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
-//    classifier = 'javadoc'
-//    from androidJavadocs.destinationDir
-//}
-
 task androidSourcesJar(type: Jar) {
     classifier = 'sources'
     from android.sourceSets.main.java.srcDirs
@@ -83,7 +66,6 @@ task androidSourcesJar(type: Jar) {
 
 artifacts {
     archives androidSourcesJar
-//    archives androidJavadocsJar
 }
 
 //adding maven information
@@ -91,26 +73,16 @@ publishing {
     publications {
         //name 'MyPublication' corresponds to 'publications' setting in bintray section
         MyPublication(MavenPublication) {
-            //test it hard-coded for now
-            artifact 'build/libs/spatialite-android-1.0.0.jar'
-//            artifact "${project.buildDir}/libs/${project.name}-release.aar"
-            groupId 'com.example'
-            artifactId 'spatialite-android'
-            version '1.0.0'
-
-            //add sources and javadoc jars to upload
+//            artifact 'build/libs/spatialite-android-1.0.1.jar'
+            artifact buildLibs + androidJar.baseName + '.jar'
+            groupId PUBLISH_GROUP_ID
+            artifactId PUBLISH_ARTIFACT_ID
+            version PUBLISH_VERSION
             artifact(androidSourcesJar)
-//            artifact(androidJavadocsJar)
         }
     }
 }
 
-def siteUrl = 'https://github.com/kristina-hager/spatialite-android-database-driver.git'
-def gitUrl = 'https://github.com/kristina-hager/spatialite-android-database-driver.git'
-
-//right now, below requires you to call:
-//gradle androidJar first
-//need to fix that here.
 bintray {
     user =  System.getenv('BINTRAY_USER')
     key = System.getenv('BINTRAY_KEY')
@@ -132,3 +104,4 @@ bintray {
 }
 
 bintrayUpload.dependsOn androidJar
+bintrayUpload.dependsOn(build)
