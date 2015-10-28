@@ -11,7 +11,7 @@ def buildLibs = 'build/libs/'
 ext {
     PUBLISH_GROUP_ID = 'com.example'
     PUBLISH_ARTIFACT_ID = 'spatialite-android'
-    PUBLISH_VERSION = '1.0.2'
+    PUBLISH_VERSION = '1.0.0'
 }
 
 android {
